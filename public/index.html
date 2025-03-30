@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rede Social</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+        #login, #postForm, #posts {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #posts div {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #e9f7fd;
+        }
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Formulário de Login -->
+    <div id="login">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+
+    <!-- Formulário para enviar postagens (fotos e vídeos) -->
+    <div id="postForm">
+        <h2>Enviar Post</h2>
+        <input type="file" id="fileInput" accept="image/*, video/*">
+        <textarea id="postText" placeholder="Compartilhe algo..." required></textarea>
+        <button id="submitPost">Postar</button>
+    </div>
+
+    <!-- Feed de postagens -->
+    <div id="posts">
+        <h2>Feed</h2>
+        <!-- As postagens aparecerão aqui -->
+    </div>
+
+    <script>
+        // Função para enviar os dados de login para o servidor
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();  // Impede o envio tradicional do formulário
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'  // Dados em formato JSON
+                },
+                body: JSON.stringify({ email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Login bem-sucedido') {
+                    alert('Login realizado com sucesso!');
+                } else {
+                    alert('Erro no login. Tente novamente!');
+                }
+            })
+            .catch(error => {
+                console.error('Erro no login:', error);
+            });
+        });
+
+        // Função para enviar a postagem para o servidor
+        document.getElementById('submitPost').addEventListener('click', function() {
+            const fileInput = document.getElementById('fileInput');
+            const postText = document.getElementById('postText').value;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);  // Adicionando o arquivo (foto ou vídeo)
+            formData.append('description', postText);    // Adicionando a descrição do post
+
+            fetch('http://localhost:3000/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Post enviado com sucesso!');
+                loadPosts();  // Atualiza o feed com o novo post
+            })
+            .catch(error => {
+                console.error('Erro ao enviar post:', error);
+            });
+        });
+
+        // Função para carregar as postagens do feed
+        function loadPosts() {
+            fetch('http://localhost:3000/posts')
+                .then(response => response.json())
+                .then(posts => {
+                    const postsDiv = document.getElementById('posts');
+                    postsDiv.innerHTML = '';  // Limpa o feed
+
+                    posts.forEach(post => {
+                        const postElement = document.createElement('div');
+                        postElement.innerHTML = `
+                            <p>${post.description}</p>
+                            <img src="${post.fileUrl}" alt="Post Image">
+                        `;
+                        postsDiv.appendChild(postElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar posts:', error);
+                });
+        }
+
+        // Carregar os posts quando a página for carregada
+        window.onload = loadPosts;
+    </script>
+
+</body>
+</html>
